@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simple Pagination Demo</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background: #f5f5f5;
+      }
+
+      .container {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      h1 {
+        color: #333;
+        text-align: center;
+      }
+
+      .controls {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      select,
+      input,
+      button {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+
+      button {
+        background: #007bff;
+        color: white;
+        cursor: pointer;
+        border: none;
+      }
+
+      button:hover {
+        background: #0056b3;
+      }
+
+      button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+
+      .info {
+        background: #e7f3ff;
+        padding: 10px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        font-weight: bold;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+      }
+
+      th,
+      td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+      }
+
+      th {
+        background: #f8f9fa;
+        font-weight: bold;
+      }
+
+      tr:hover {
+        background: #f5f5f5;
+      }
+
+      .pagination {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .page-input {
+        width: 60px;
+        text-align: center;
+      }
+
+      .debug {
+        background: #fff3cd;
+        padding: 15px;
+        border-radius: 4px;
+        margin-top: 20px;
+        font-family: monospace;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🎯 Simple Pagination Demo</h1>
+
+      <!-- Controls -->
+      <div class="controls">
+        <label>Page Size:</label>
+        <select id="pageSize">
+          <option value="5">5 per page</option>
+          <option value="10" selected>10 per page</option>
+          <option value="20">20 per page</option>
+        </select>
+
+        <label>Filter Name:</label>
+        <input type="text" id="nameFilter" placeholder="Search names..." />
+        <button id="applyFilter">Apply Filter</button>
+        <button id="clearFilter">Clear Filter</button>
+      </div>
+
+      <!-- Info Display -->
+      <div class="info" id="recordsInfo">Showing 1 - 10 of 50 records</div>
+
+      <!-- Data Table -->
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Age</th>
+            <th>City</th>
+          </tr>
+        </thead>
+        <tbody id="dataTable">
+          <!-- Data will be inserted here -->
+        </tbody>
+      </table>
+
+      <!-- Pagination Controls -->
+      <div class="pagination">
+        <button id="firstPage">First</button>
+        <button id="prevPage">Previous</button>
+
+        <span>Page</span>
+        <input
+          type="number"
+          id="currentPage"
+          class="page-input"
+          value="1"
+          min="1"
+        />
+        <span>of <span id="totalPages">1</span></span>
+
+        <button id="nextPage">Next</button>
+        <button id="lastPage">Last</button>
+      </div>
+
+      <!-- Debug Info -->
+      <div class="debug">
+        <strong>Debug Info:</strong><br />
+        <span id="debugInfo">Debug info will appear here</span>
+      </div>
+    </div>
+
+    <script>
+      // 🎯 PAGINATION STATE - These 4 variables control everything
+      let currentPage = 1;
+      let totalPages = 1;
+      let totalRecords = 0;
+      let pageSize = 10;
+      let filteredData = [];
+
+      // 📊 FAKE DATA - In real app, this comes from server
+      const allData = [
+        { id: 1, name: "Alice Johnson", age: 25, city: "New York" },
+        { id: 2, name: "Bob Smith", age: 30, city: "Los Angeles" },
+        { id: 3, name: "Carol Davis", age: 22, city: "Chicago" },
+        { id: 4, name: "David Wilson", age: 28, city: "Houston" },
+        { id: 5, name: "Emma Brown", age: 35, city: "Phoenix" },
+        { id: 6, name: "Frank Miller", age: 27, city: "Philadelphia" },
+        { id: 7, name: "Grace Lee", age: 29, city: "San Antonio" },
+        { id: 8, name: "Henry Taylor", age: 31, city: "San Diego" },
+        { id: 9, name: "Ivy Chen", age: 26, city: "Dallas" },
+        { id: 10, name: "Jack Anderson", age: 33, city: "San Jose" },
+        { id: 11, name: "Kate Martinez", age: 24, city: "Austin" },
+        { id: 12, name: "Liam Garcia", age: 32, city: "Jacksonville" },
+        { id: 13, name: "Mia Rodriguez", age: 23, city: "San Francisco" },
+        { id: 14, name: "Noah Williams", age: 29, city: "Columbus" },
+        { id: 15, name: "Olivia Jones", age: 27, city: "Fort Worth" },
+        { id: 16, name: "Peter Kim", age: 34, city: "Charlotte" },
+        { id: 17, name: "Quinn Adams", age: 25, city: "Seattle" },
+        { id: 18, name: "Ruby Clark", age: 28, city: "Denver" },
+        { id: 19, name: "Sam Thompson", age: 30, city: "Washington" },
+        { id: 20, name: "Tina White", age: 26, city: "Boston" },
+        { id: 21, name: "Uma Patel", age: 31, city: "Nashville" },
+        { id: 22, name: "Victor Lopez", age: 29, city: "Memphis" },
+        { id: 23, name: "Wendy Hall", age: 27, city: "Portland" },
+        { id: 24, name: "Xavier Green", age: 32, city: "Oklahoma City" },
+        { id: 25, name: "Yara Scott", age: 24, city: "Las Vegas" },
+        { id: 26, name: "Zoe Turner", age: 28, city: "Louisville" },
+        { id: 27, name: "Adam Wright", age: 33, city: "Baltimore" },
+        { id: 28, name: "Bella King", age: 25, city: "Milwaukee" },
+        { id: 29, name: "Chris Hill", age: 30, city: "Albuquerque" },
+        { id: 30, name: "Diana Young", age: 26, city: "Tucson" },
+        { id: 31, name: "Ethan Morris", age: 31, city: "Fresno" },
+        { id: 32, name: "Fiona Cook", age: 27, city: "Sacramento" },
+        { id: 33, name: "George Reed", age: 29, city: "Long Beach" },
+        { id: 34, name: "Hannah Bell", age: 24, city: "Kansas City" },
+        { id: 35, name: "Ian Cooper", age: 32, city: "Mesa" },
+        { id: 36, name: "Julia Parker", age: 28, city: "Virginia Beach" },
+        { id: 37, name: "Kevin Ward", age: 30, city: "Atlanta" },
+        { id: 38, name: "Luna Rivera", age: 25, city: "Colorado Springs" },
+        { id: 39, name: "Max Collins", age: 33, city: "Raleigh" },
+        { id: 40, name: "Nina Brooks", age: 26, city: "Omaha" },
+        { id: 41, name: "Oscar Gray", age: 31, city: "Miami" },
+        { id: 42, name: "Penny Foster", age: 27, city: "Oakland" },
+        { id: 43, name: "Quincy Morgan", age: 29, city: "Minneapolis" },
+        { id: 44, name: "Rosa Hughes", age: 24, city: "Tulsa" },
+        { id: 45, name: "Steve Powell", age: 32, city: "Cleveland" },
+        { id: 46, name: "Tara James", age: 28, city: "Wichita" },
+        { id: 47, name: "Ulysses Ross", age: 30, city: "Arlington" },
+        { id: 48, name: "Vera Stone", age: 25, city: "New Orleans" },
+        { id: 49, name: "Will Bryant", age: 33, city: "Bakersfield" },
+        { id: 50, name: "Xara Price", age: 26, city: "Tampa" },
+      ];
+
+      // 🔍 FILTER FUNCTION
+      function applyFilter() {
+        const filterValue = document
+          .getElementById("nameFilter")
+          .value.toLowerCase()
+          .trim();
+
+        if (filterValue === "") {
+          filteredData = [...allData]; // Show all data
+        } else {
+          filteredData = allData.filter((person) =>
+            person.name.toLowerCase().includes(filterValue)
+          );
+        }
+
+        // Reset to page 1 when filter changes
+        currentPage = 1;
+        updatePagination();
+      }
+
+      // 📄 MAIN PAGINATION FUNCTION
+      function updatePagination() {
+        // 1. Calculate pagination state
+        totalRecords = filteredData.length;
+        totalPages = Math.ceil(totalRecords / pageSize);
+
+        // 2. Validate current page
+        if (currentPage > totalPages && totalPages > 0) {
+          currentPage = totalPages;
+        }
+        if (currentPage < 1) {
+          currentPage = 1;
+        }
+
+        // 3. Calculate which records to show
+        const startIndex = (currentPage - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+        const pageData = filteredData.slice(startIndex, endIndex);
+
+        // 4. Update table
+        updateTable(pageData);
+
+        // 5. Update UI
+        updateUI();
+
+        // 6. Update debug info
+        updateDebug(startIndex, endIndex);
+      }
+
+      // 🏗️ UPDATE TABLE WITH DATA
+      function updateTable(data) {
+        const tbody = document.getElementById("dataTable");
+
+        if (data.length === 0) {
+          tbody.innerHTML =
+            '<tr><td colspan="4" style="text-align: center;">No records found</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data
+          .map(
+            (person) => `
+                <tr>
+                    <td>${person.id}</td>
+                    <td>${person.name}</td>
+                    <td>${person.age}</td>
+                    <td>${person.city}</td>
+                </tr>
+            `
+          )
+          .join("");
+      }
+
+      // 🎨 UPDATE UI ELEMENTS
+      function updateUI() {
+        // Update records info
+        const startRecord =
+          totalRecords === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+        const endRecord = Math.min(currentPage * pageSize, totalRecords);
+        document.getElementById(
+          "recordsInfo"
+        ).textContent = `Showing ${startRecord} - ${endRecord} of ${totalRecords} records`;
+
+        // Update page input and total pages
+        document.getElementById("currentPage").value = currentPage;
+        document.getElementById("currentPage").max = totalPages;
+        document.getElementById("totalPages").textContent = totalPages;
+
+        // Update button states
+        document.getElementById("firstPage").disabled = currentPage <= 1;
+        document.getElementById("prevPage").disabled = currentPage <= 1;
+        document.getElementById("nextPage").disabled =
+          currentPage >= totalPages;
+        document.getElementById("lastPage").disabled =
+          currentPage >= totalPages;
+      }
+
+      // 🐛 UPDATE DEBUG INFO
+      function updateDebug(startIndex, endIndex) {
+        const debug = `
+                currentPage: ${currentPage} | 
+                totalPages: ${totalPages} | 
+                totalRecords: ${totalRecords} | 
+                pageSize: ${pageSize} | 
+                startIndex: ${startIndex} | 
+                endIndex: ${endIndex} | 
+                showing: ${endIndex - startIndex} records
+            `;
+        document.getElementById("debugInfo").textContent = debug;
+      }
+
+      // 🎮 NAVIGATION FUNCTIONS
+      function goToPage(page) {
+        if (page < 1 || page > totalPages) return;
+        currentPage = page;
+        updatePagination();
+      }
+
+      // 🎯 EVENT LISTENERS
+      document.addEventListener("DOMContentLoaded", function () {
+        // Page size change
+        document
+          .getElementById("pageSize")
+          .addEventListener("change", function (e) {
+            pageSize = parseInt(e.target.value);
+            currentPage = 1; // Reset to first page
+            updatePagination();
+          });
+
+        // Filter buttons
+        document
+          .getElementById("applyFilter")
+          .addEventListener("click", applyFilter);
+        document
+          .getElementById("clearFilter")
+          .addEventListener("click", function () {
+            document.getElementById("nameFilter").value = "";
+            applyFilter();
+          });
+
+        // Navigation buttons
+        document
+          .getElementById("firstPage")
+          .addEventListener("click", () => goToPage(1));
+        document
+          .getElementById("prevPage")
+          .addEventListener("click", () => goToPage(currentPage - 1));
+        document
+          .getElementById("nextPage")
+          .addEventListener("click", () => goToPage(currentPage + 1));
+        document
+          .getElementById("lastPage")
+          .addEventListener("click", () => goToPage(totalPages));
+
+        // Page input
+        document
+          .getElementById("currentPage")
+          .addEventListener("change", function (e) {
+            const page = parseInt(e.target.value);
+            if (page >= 1 && page <= totalPages) {
+              goToPage(page);
+            } else {
+              e.target.value = currentPage; // Reset if invalid
+            }
+          });
+
+        // Filter on Enter key
+        document
+          .getElementById("nameFilter")
+          .addEventListener("keypress", function (e) {
+            if (e.key === "Enter") {
+              applyFilter();
+            }
+          });
+
+        // Initialize
+        applyFilter(); // This will set filteredData = allData and call updatePagination()
+      });
+    </script>
+  </body>
+</html>
