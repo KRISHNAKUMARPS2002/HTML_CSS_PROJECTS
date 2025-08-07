@@ -37,7 +37,7 @@ This repository is a curated collection of my web development projects built usi
 
 ```bash
 # Clone the repo
-git clone https://github.com/your-username/kodedbykrish-web-projects
+git clone https://github.com/KRISHNAKUMARPS2002/html-css-js-ejs-mini-projects.git
 
 # Navigate into any project folder
 cd DICE-GAME_HTML_CSS_JS
